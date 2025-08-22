@@ -1,14 +1,17 @@
 import { Link } from "react-router-dom";
 import { Home, HelpCircle, ShoppingCart, Info, Star, List } from "lucide-react";
+import logo from "../assets/logo.png";
 
 function Navbar() {
+  const basePrice = 10000; // Base price in rupees
+
   return (
     <nav className="bg-white shadow-md fixed w-full z-50">
       <div className="container mx-auto flex justify-between items-center py-4 px-6">
         
         {/* Logo */}
         <Link to="/" className="text-xl font-bold text-amber-600 flex items-center gap-2">
-          🍚 Low Carb Cooker
+          <img src={logo} alt="Logo" className="h-14" />
         </Link>
 
         {/* Nav Links */}
@@ -37,7 +40,7 @@ function Navbar() {
 
         {/* Buy Button */}
         <Link
-          to="/checkout"
+          to={`/checkout?product=1&price=${basePrice}&quantity=1&name=${encodeURIComponent("3L Low Carb Sugar Rice Cooker")}`}
           className="bg-amber-600 text-white px-4 py-2 rounded-lg shadow hover:bg-amber-700 transition flex items-center gap-2"
         >
           <ShoppingCart size={18} /> Buy Now

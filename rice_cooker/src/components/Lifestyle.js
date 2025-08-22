@@ -3,7 +3,7 @@ import { motion } from "framer-motion";
 
 const Lifestyle = () => {
   return (
-    <section id="lifestyle" className="py-20 bg-white">
+    <section id="lifestyle" className="py-5 bg-white">
       <div className=" px-6">
         {/* Heading */}
         <motion.h2

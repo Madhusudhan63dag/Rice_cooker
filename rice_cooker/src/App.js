@@ -18,9 +18,9 @@ function Home() {
       <Problem />
       <Product />
       <How />
-      <Lifestyle />
-      <Review />
+      {/* <Lifestyle /> */}
       <FAQ />
+      <Review />
     </div>
   );
 }
@@ -32,7 +32,7 @@ function App() {
         <Routes>
           <Route path='/' element={<Home />} />
           <Route path='/checkout' element={<Checkout />} />
-          <Route path='/thankyou' element={<Thankyou />} />
+          <Route path='/thank-you' element={<Thankyou />} />
         </Routes>
         <Footer />
     </div>

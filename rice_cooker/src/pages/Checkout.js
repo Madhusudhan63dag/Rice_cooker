@@ -1,6 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import logo from '../assets/1.webp'; // Ensure this path is correct
+import logo from '../assets/1.webp';
+
+
+const url = "https://razorpaybackend-wgbh.onrender.com"
+
+// https://razorpaybackend-wgbh.onrender.com
 
 const Checkout = () => {
   const navigate = useNavigate();
@@ -19,41 +24,47 @@ const Checkout = () => {
     country: 'India'
   });
 
-  const [orderItems, setOrderItems] = useState([]);
-
-  const [paymentMethod, setPaymentMethod] = useState('advance');
+  const [paymentMethod, setPaymentMethod] = useState('full');
   const [isProcessing, setIsProcessing] = useState(false);
   const [errors, setErrors] = useState({});
 
+  // Initialize selected product based on URL parameters
+  const initializeProduct = () => {
+    const productId = searchParams.get('product');
+    const price = searchParams.get('price');
+    const quantity = searchParams.get('quantity');
+    const name = searchParams.get('name');
 
-  // // Initialize selected product based on URL parameter or default to Buy 1 Get 1
-  // const getInitialProduct = () => {
-  //   const productId = searchParams.get('product');
-  //   if (productId) {
-  //     const product = productOptions.find(p => p.id === parseInt(productId));
-  //     return product || productOptions[1];
-  //   }
-  //   return productOptions[1];
-  // };
+    if (productId && price && quantity && name) {
+      return {
+        id: parseInt(productId),
+        name: decodeURIComponent(name),
+        price: parseInt(price),
+        quantity: parseInt(quantity),
+        description: decodeURIComponent(name)
+      };
+    }
+    
+    // Default product if no parameters are provided
+    return {
+      id: 2, 
+      name: 'Buy 1 Get 1 Free Pack', 
+      price: 750,
+      quantity: 2, 
+      description: '3L Low Carb Sugar Rice Cooker - Buy 1 Get 1 Free Pack'
+    };
+  };
 
-  const [selectedProduct, setSelectedProduct] = useState({id: 2, name: 'Buy 1 Get 1 Free Pack', price: 1500, quantity: 2, description: '3L Low Carb Sugar Rice Cooker - Buy 1 Get 1 Free Pack'});
+  const [selectedProduct, setSelectedProduct] = useState(initializeProduct());
 
-  // Order calculation - Advance payment amounts
-  const subtotal = selectedProduct.price;
+  // Calculate order totals
+  const subtotal = selectedProduct.price * selectedProduct.quantity;
   const discountAmount = 0;
   const totalAmount = subtotal - discountAmount;
-  
-  // Advance payment amounts
-  const getAdvanceAmount = (productId) => {
-    return productId === 1 ? 500 : 800; // Single pack: ₹1000, Two pack: ₹1500
-  };
-  
-  const advanceAmount = getAdvanceAmount(selectedProduct.id);
-  const balanceAmount = totalAmount - advanceAmount;
 
   // Get payment amount based on selected payment method
   const getPaymentAmount = () => {
-    return paymentMethod === 'full' ? totalAmount : advanceAmount;
+    return paymentMethod === 'full' ? totalAmount : 0;
   };
 
   // Load Razorpay script
@@ -70,11 +81,6 @@ const Checkout = () => {
 
     loadRazorpayScript();
   }, []);
-
-  // Update orderItems when product selection changes
-  useEffect(() => {
-    setOrderItems([selectedProduct]);
-  }, [selectedProduct]);
 
   // Handle form input changes
   const handleInputChange = (e) => {
@@ -112,11 +118,11 @@ const Checkout = () => {
     return Object.keys(newErrors).length === 0;
   };
 
-  // Create Razorpay order - Based on payment method selection
+  // Create Razorpay order (only for full payment)
   const createRazorpayOrder = async () => {
     try {
       const paymentAmount = getPaymentAmount();
-      const response = await fetch('https://razorpaybackend-wgbh.onrender.com/create-order', {
+      const response = await fetch(`${url}/create-order`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -132,8 +138,6 @@ const Checkout = () => {
             productName: selectedProduct.name,
             totalAmount: totalAmount,
             paymentType: paymentMethod,
-            advanceAmount: advanceAmount,
-            balanceAmount: paymentMethod === 'full' ? 0 : balanceAmount,
             paidAmount: paymentAmount
           }
         }),
@@ -158,13 +162,13 @@ const Checkout = () => {
       key: orderData.key,
       amount: orderData.order.amount,
       currency: orderData.order.currency,
-      name: 'Shilajit Store',
+      name: 'Low Carb Sugar Rice Cooker',
       description: `${selectedProduct.name} Purchase`,
       order_id: orderData.order.id,
       handler: async function (response) {
         try {
           // Verify payment
-          const verifyResponse = await fetch('https://razorpaybackend-wgbh.onrender.com/verify-payment', {
+          const verifyResponse = await fetch(`${url}/verify-payment`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
@@ -209,7 +213,7 @@ const Checkout = () => {
   };
 
   // Handle successful payment
-  const handleSuccessfulPayment = async (paymentResponse) => {
+  const handleSuccessfulPayment = async (paymentResponse = null) => {
     try {
       const orderNumber = `ORD${Date.now()}`;
       
@@ -218,8 +222,8 @@ const Checkout = () => {
       
       // Create shipping address with payment note
       const baseAddress = `${customerDetails.address}${customerDetails.apartment ? ', ' + customerDetails.apartment : ''}, ${customerDetails.city}, ${customerDetails.state} - ${customerDetails.zip}, ${customerDetails.country}`;
-      const shippingAddressWithNote = paymentMethod === 'advance' 
-        ? `${baseAddress} [ADVANCE PAID: ₹${advanceAmount}, BALANCE: ₹${balanceAmount}]`
+      const shippingAddressWithNote = paymentMethod === 'cod' 
+        ? `${baseAddress} [COD - PAY ON DELIVERY: ₹${totalAmount}]`
         : `${baseAddress} [FULL PAYMENT COMPLETED]`;
       
       // Navigate to thank you page with order data
@@ -231,10 +235,8 @@ const Checkout = () => {
             totalAmount: totalAmount,
             paymentType: paymentMethod,
             paidAmount: getPaymentAmount(),
-            advanceAmount: paymentMethod === 'advance' ? advanceAmount : 0,
-            balanceAmount: paymentMethod === 'full' ? 0 : balanceAmount,
-            paymentMethod: 'Razorpay',
-            paymentId: paymentResponse.razorpay_payment_id,
+            paymentMethod: paymentMethod === 'cod' ? 'COD' : 'Razorpay',
+            paymentId: paymentResponse ? paymentResponse.razorpay_payment_id : 'COD',
             customerName: `${customerDetails.firstName} ${customerDetails.lastName}`,
             customerEmail: customerDetails.email,
             customerPhone: customerDetails.phone,
@@ -245,9 +247,92 @@ const Checkout = () => {
       
     } catch (error) {
       console.error('Post-payment processing error:', error);
-      alert('Payment successful but there was an issue processing your order. Our team will contact you shortly.');
+      alert('Order placed successfully! Our team will contact you shortly.');
     } finally {
       setIsProcessing(false);
+    }
+  };
+
+  // Send order confirmation email - FIXED TO WORK WITH YOUR API
+  const sendOrderConfirmation = async (orderNumber, paymentResponse) => {
+    try {
+      // Prepare email data matching the API structure
+      const emailData = {
+        customerEmail: customerDetails.email,
+        orderDetails: {
+          orderNumber: orderNumber,
+          productName: selectedProduct.name,
+          quantity: selectedProduct.quantity,
+          totalAmount: totalAmount,
+          currency: '₹',
+          paymentMethod: paymentMethod === 'cod' ? 'COD' : 'Razorpay',
+          paymentId: paymentResponse ? paymentResponse.razorpay_payment_id : 'COD',
+          // For COD orders, add balance amount
+          ...(paymentMethod === 'cod' && {
+            balanceAmount: totalAmount,
+            advanceAmount: 0
+          }),
+          // For multiple products structure (required by your API)
+          products: [{
+            name: selectedProduct.name,
+            quantity: selectedProduct.quantity,
+            price: selectedProduct.price
+          }]
+        },
+        customerDetails: {
+          firstName: customerDetails.firstName,
+          lastName: customerDetails.lastName,
+          email: customerDetails.email,
+          phone: customerDetails.phone,
+          address: customerDetails.address,
+          apartment: customerDetails.apartment,
+          city: customerDetails.city,
+          state: customerDetails.state,
+          zip: customerDetails.zip,
+          country: customerDetails.country
+        },
+        productName: selectedProduct.name
+      };
+
+      // Use different endpoints based on payment method
+      let apiEndpoint;
+      if (paymentMethod === 'cod') {
+        // For COD, use the advance payment confirmation endpoint with balance amount
+        apiEndpoint = `${url}/send-advance-payment-confirmation`;
+        emailData.orderDetails.advanceAmount = 0;
+        emailData.orderDetails.balanceAmount = totalAmount;
+      } else {
+        // For full payment, use regular order confirmation
+        apiEndpoint = `${url}/send-order-confirmation`;
+      }
+
+      const response = await fetch(apiEndpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(emailData),
+      });
+
+      const data = await response.json();
+      
+      if (!data.success) {
+        console.error('Email sending failed:', data);
+        // Try fallback to regular order confirmation
+        if (paymentMethod === 'cod') {
+          const fallbackResponse = await fetch(`${url}/send-order-confirmation`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(emailData),
+          });
+          const fallbackData = await fallbackResponse.json();
+          console.log('Fallback email result:', fallbackData);
+        }
+      }
+    } catch (error) {
+      console.error('Email error:', error);
     }
   };
 
@@ -263,119 +348,40 @@ const Checkout = () => {
     setIsProcessing(true);
     
     try {
-      const orderData = await createRazorpayOrder();
-      await handleRazorpayPayment(orderData);
+      if (paymentMethod === 'cod') {
+        // For COD, just process the order without payment
+        await handleSuccessfulPayment();
+      } else {
+        // For full payment, use Razorpay
+        const orderData = await createRazorpayOrder();
+        await handleRazorpayPayment(orderData);
+      }
     } catch (error) {
       console.error('Checkout error:', error);
       alert('Failed to process order. Please try again.');
       setIsProcessing(false);
     }
   };
-  // Send order confirmation email using appropriate API based on payment method
-  const sendOrderConfirmation = async (orderNumber, paymentResponse) => {
-    try {
-      // Create detailed shipping address with payment note
-      const baseShippingAddress = `${customerDetails.address}${customerDetails.apartment ? ', ' + customerDetails.apartment : ''}, ${customerDetails.city}, ${customerDetails.state} - ${customerDetails.zip}, ${customerDetails.country}`;
-      
-      const emailData = {
-        customerEmail: customerDetails.email,
-        orderDetails: {
-          orderNumber: orderNumber,
-          products: [{
-            name: selectedProduct.name,
-            quantity: selectedProduct.quantity,
-            price: selectedProduct.price,
-            description: selectedProduct.description
-          }],
-          totalAmount: totalAmount,
-          paymentType: paymentMethod,
-          paidAmount: getPaymentAmount(),
-          advanceAmount: paymentMethod === 'advance' ? advanceAmount : 0,
-          balanceAmount: paymentMethod === 'full' ? 0 : balanceAmount,
-          currency: '₹',
-          paymentMethod: 'Razorpay',
-          paymentId: paymentResponse.razorpay_payment_id,
-          quantity: selectedProduct.quantity,
-          productName: selectedProduct.name,
-          shippingNote: paymentMethod === 'advance' 
-            ? `ADVANCE PAID: ₹${advanceAmount}, BALANCE: ₹${balanceAmount} COD`
-            : 'FULL PAYMENT COMPLETED',
-          paymentNote: paymentMethod === 'advance' 
-            ? `Advance payment of ₹${advanceAmount} received. Balance amount ₹${balanceAmount} to be collected on delivery.`
-            : `Full payment of ₹${totalAmount} completed online. No amount due on delivery.`,
-          shippingAddress: baseShippingAddress,
-          shippingAddressWithNote: paymentMethod === 'advance' 
-            ? `${baseShippingAddress}\n\n** PAYMENT NOTE: Advance ₹${advanceAmount} paid online, Balance ₹${balanceAmount} to collect on delivery **`
-            : `${baseShippingAddress}\n\n** PAYMENT NOTE: Full payment ₹${totalAmount} completed online **`
-        },
-        customerDetails: customerDetails,
-        productName: selectedProduct.name
-      };
-
-      // Use different API endpoint based on payment method
-      const apiEndpoint = paymentMethod === 'advance' 
-        ? 'https://razorpaybackend-wgbh.onrender.com/send-advance-payment-confirmation'
-        : 'https://razorpaybackend-wgbh.onrender.com/send-order-confirmation';
-
-      const response = await fetch(apiEndpoint, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(emailData),
-      });
-
-      const data = await response.json();
-      
-      if (!data.success) {
-        console.error('Email sending failed:', data);
-      }
-    } catch (error) {
-      console.error('Email error:', error);
-    }
-  };
-
-  // Update URL when product selection changes
-  const handleProductChange = (product) => {
-    setSelectedProduct(product);
-    // Update URL without page reload
-    const newSearchParams = new URLSearchParams(searchParams);
-    newSearchParams.set('product', product.id.toString());
-    navigate(`/checkout?${newSearchParams.toString()}`, { replace: true });
-  };
 
   return (
-    <div className="min-h-screen bg-black text-white font-sans">
-      {/* Header Navigation */}
-      <nav className="bg-black border-b border-gray-800 px-6 py-4">
-        <div className="max-w-6xl mx-auto flex items-center justify-between">
-          <a href="/" className="flex items-center space-x-4">
-          <img src={logo} alt="Shilajit Store" className="h-20" />
-          </a>
-          <div className="flex items-center space-x-4">
-            <span className="text-gray-300">Secure Checkout</span>
-            <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
-          </div>
-        </div>
-      </nav>
-
-      <div className="max-w-7xl mx-auto px-6 py-8">
+    <div className="bg-white text-gray-900">
+      <div className="px-6 py-8">
         {/* Progress Indicator */}
         <div className="mb-8">
           <div className="flex items-center justify-center space-x-4 mb-6">
             <div className="flex items-center">
-              <div className="w-8 h-8 bg-yellow-400 rounded-full flex items-center justify-center text-black font-bold text-sm">1</div>
-              <span className="ml-2 text-yellow-400 font-medium">Checkout</span>
+              <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center text-white font-bold text-sm">1</div>
+              <span className="ml-2 text-blue-600 font-medium">Checkout</span>
             </div>
-            <div className="w-12 h-0.5 bg-gray-700"></div>
+            <div className="w-12 h-0.5 bg-gray-300"></div>
             <div className="flex items-center">
-              <div className="w-8 h-8 bg-gray-700 rounded-full flex items-center justify-center text-gray-400 font-bold text-sm">2</div>
-              <span className="ml-2 text-gray-400">Payment</span>
+              <div className="w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center text-gray-600 font-bold text-sm">2</div>
+              <span className="ml-2 text-gray-600">Payment</span>
             </div>
-            <div className="w-12 h-0.5 bg-gray-700"></div>
+            <div className="w-12 h-0.5 bg-gray-300"></div>
             <div className="flex items-center">
-              <div className="w-8 h-8 bg-gray-700 rounded-full flex items-center justify-center text-gray-400 font-bold text-sm">3</div>
-              <span className="ml-2 text-gray-400">Confirmation</span>
+              <div className="w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center text-gray-600 font-bold text-sm">3</div>
+              <span className="ml-2 text-gray-600">Confirmation</span>
             </div>
           </div>
         </div>
@@ -383,21 +389,20 @@ const Checkout = () => {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Customer Details Form */}
           <div className="lg:col-span-2">
-            <div className="bg-gray-900 rounded-3xl p-8 border border-gray-800">
-              
+            <div className="bg-gray-50 rounded-3xl p-8 border border-gray-200 shadow-sm">
               <div className="flex items-center mb-8">
-                <div className="w-10 h-10 bg-yellow-400 rounded-full flex items-center justify-center mr-4">
-                  <svg className="w-5 h-5 text-black" fill="currentColor" viewBox="0 0 20 20">
+                <div className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center mr-4">
+                  <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
                     <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
                   </svg>
                 </div>
-                <h2 className="text-3xl font-bold text-white">Customer Information</h2>
+                <h2 className="text-3xl font-bold text-gray-900">Customer Information</h2>
               </div>
               
               <form onSubmit={handleSubmit} className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-2">
-                    <label htmlFor="firstName" className="block text-sm font-semibold text-gray-300 mb-2">
+                    <label htmlFor="firstName" className="block text-sm font-semibold text-gray-700 mb-2">
                       First Name *
                     </label>
                     <input
@@ -406,14 +411,14 @@ const Checkout = () => {
                       name="firstName"
                       value={customerDetails.firstName}
                       onChange={handleInputChange}
-                      className={`w-full p-4 bg-gray-800 border-2 rounded-xl text-white placeholder-gray-400 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-yellow-400 ${
-                        errors.firstName ? 'border-red-500 bg-red-900/20' : 'border-gray-700 hover:border-gray-600'
+                      className={`w-full p-4 bg-white border-2 rounded-xl text-gray-900 placeholder-gray-500 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+                        errors.firstName ? 'border-red-500 bg-red-50' : 'border-gray-300 hover:border-gray-400'
                       }`}
                       placeholder="Enter your first name"
                       required
                     />
                     {errors.firstName && (
-                      <span className="text-red-400 text-sm font-medium flex items-center">
+                      <span className="text-red-600 text-sm font-medium flex items-center">
                         <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
                           <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
                         </svg>
@@ -423,7 +428,7 @@ const Checkout = () => {
                   </div>
                   
                   <div className="space-y-2">
-                    <label htmlFor="lastName" className="block text-sm font-semibold text-gray-300 mb-2">
+                    <label htmlFor="lastName" className="block text-sm font-semibold text-gray-700 mb-2">
                       Last Name *
                     </label>
                     <input
@@ -432,14 +437,14 @@ const Checkout = () => {
                       name="lastName"
                       value={customerDetails.lastName}
                       onChange={handleInputChange}
-                      className={`w-full p-4 bg-gray-800 border-2 rounded-xl text-white placeholder-gray-400 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-yellow-400 ${
-                        errors.lastName ? 'border-red-500 bg-red-900/20' : 'border-gray-700 hover:border-gray-600'
+                      className={`w-full p-4 bg-white border-2 rounded-xl text-gray-900 placeholder-gray-500 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+                        errors.lastName ? 'border-red-500 bg-red-50' : 'border-gray-300 hover:border-gray-400'
                       }`}
                       placeholder="Enter your last name"
                       required
                     />
                     {errors.lastName && (
-                      <span className="text-red-400 text-sm font-medium flex items-center">
+                      <span className="text-red-600 text-sm font-medium flex items-center">
                         <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
                           <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
                         </svg>
@@ -451,7 +456,7 @@ const Checkout = () => {
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-2">
-                    <label htmlFor="email" className="block text-sm font-semibold text-gray-300 mb-2">
+                    <label htmlFor="email" className="block text-sm font-semibold text-gray-700 mb-2">
                       Email Address *
                     </label>
                     <input
@@ -460,14 +465,14 @@ const Checkout = () => {
                       name="email"
                       value={customerDetails.email}
                       onChange={handleInputChange}
-                      className={`w-full p-4 bg-gray-800 border-2 rounded-xl text-white placeholder-gray-400 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-yellow-400 ${
-                        errors.email ? 'border-red-500 bg-red-900/20' : 'border-gray-700 hover:border-gray-600'
+                      className={`w-full p-4 bg-white border-2 rounded-xl text-gray-900 placeholder-gray-500 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+                        errors.email ? 'border-red-500 bg-red-50' : 'border-gray-300 hover:border-gray-400'
                       }`}
                       placeholder="your@email.com"
                       required
                     />
                     {errors.email && (
-                      <span className="text-red-400 text-sm font-medium flex items-center">
+                      <span className="text-red-600 text-sm font-medium flex items-center">
                         <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
                           <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
                         </svg>
@@ -477,7 +482,7 @@ const Checkout = () => {
                   </div>
                   
                   <div className="space-y-2">
-                    <label htmlFor="phone" className="block text-sm font-semibold text-gray-300 mb-2">
+                    <label htmlFor="phone" className="block text-sm font-semibold text-gray-700 mb-2">
                       Phone Number *
                     </label>
                     <input
@@ -486,14 +491,14 @@ const Checkout = () => {
                       name="phone"
                       value={customerDetails.phone}
                       onChange={handleInputChange}
-                      className={`w-full p-4 bg-gray-800 border-2 rounded-xl text-white placeholder-gray-400 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-yellow-400 ${
-                        errors.phone ? 'border-red-500 bg-red-900/20' : 'border-gray-700 hover:border-gray-600'
+                      className={`w-full p-4 bg-white border-2 rounded-xl text-gray-900 placeholder-gray-500 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+                        errors.phone ? 'border-red-500 bg-red-50' : 'border-gray-300 hover:border-gray-400'
                       }`}
                       placeholder="+91 XXXXX XXXXX"
                       required
                     />
                     {errors.phone && (
-                      <span className="text-red-400 text-sm font-medium flex items-center">
+                      <span className="text-red-600 text-sm font-medium flex items-center">
                         <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
                           <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
                         </svg>
@@ -504,7 +509,7 @@ const Checkout = () => {
                 </div>
                 
                 <div className="space-y-2">
-                  <label htmlFor="address" className="block text-sm font-semibold text-gray-300 mb-2">
+                  <label htmlFor="address" className="block text-sm font-semibold text-gray-700 mb-2">
                     Street Address *
                   </label>
                   <input
@@ -513,14 +518,14 @@ const Checkout = () => {
                     name="address"
                     value={customerDetails.address}
                     onChange={handleInputChange}
-                    className={`w-full p-4 bg-gray-800 border-2 rounded-xl text-white placeholder-gray-400 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-yellow-400 ${
-                      errors.address ? 'border-red-500 bg-red-900/20' : 'border-gray-700 hover:border-gray-600'
+                    className={`w-full p-4 bg-white border-2 rounded-xl text-gray-900 placeholder-gray-500 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+                      errors.address ? 'border-red-500 bg-red-50' : 'border-gray-300 hover:border-gray-400'
                     }`}
                     placeholder="House number, street name"
                     required
                   />
                   {errors.address && (
-                    <span className="text-red-400 text-sm font-medium flex items-center">
+                    <span className="text-red-600 text-sm font-medium flex items-center">
                       <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
                         <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
                       </svg>
@@ -530,7 +535,7 @@ const Checkout = () => {
                 </div>
                 
                 <div className="space-y-2">
-                  <label htmlFor="apartment" className="block text-sm font-semibold text-gray-300 mb-2">
+                  <label htmlFor="apartment" className="block text-sm font-semibold text-gray-700 mb-2">
                     Apartment, Suite, etc. (Optional)
                   </label>
                   <input
@@ -539,14 +544,14 @@ const Checkout = () => {
                     name="apartment"
                     value={customerDetails.apartment}
                     onChange={handleInputChange}
-                    className="w-full p-4 bg-gray-800 border-2 border-gray-700 rounded-xl text-white placeholder-gray-400 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-yellow-400 hover:border-gray-600"
+                    className="w-full p-4 bg-white border-2 border-gray-300 rounded-xl text-gray-900 placeholder-gray-500 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 hover:border-gray-400"
                     placeholder="Apartment, floor, building"
                   />
                 </div>
                 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                   <div className="space-y-2">
-                    <label htmlFor="city" className="block text-sm font-semibold text-gray-300 mb-2">
+                    <label htmlFor="city" className="block text-sm font-semibold text-gray-700 mb-2">
                       City *
                     </label>
                     <input
@@ -555,14 +560,14 @@ const Checkout = () => {
                       name="city"
                       value={customerDetails.city}
                       onChange={handleInputChange}
-                      className={`w-full p-4 bg-gray-800 border-2 rounded-xl text-white placeholder-gray-400 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-yellow-400 ${
-                        errors.city ? 'border-red-500 bg-red-900/20' : 'border-gray-700 hover:border-gray-600'
+                      className={`w-full p-4 bg-white border-2 rounded-xl text-gray-900 placeholder-gray-500 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+                        errors.city ? 'border-red-500 bg-red-50' : 'border-gray-300 hover:border-gray-400'
                       }`}
                       placeholder="Your city"
                       required
                     />
                     {errors.city && (
-                      <span className="text-red-400 text-sm font-medium flex items-center">
+                      <span className="text-red-600 text-sm font-medium flex items-center">
                         <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
                           <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
                         </svg>
@@ -572,7 +577,7 @@ const Checkout = () => {
                   </div>
                   
                   <div className="space-y-2">
-                    <label htmlFor="state" className="block text-sm font-semibold text-gray-300 mb-2">
+                    <label htmlFor="state" className="block text-sm font-semibold text-gray-700 mb-2">
                       State *
                     </label>
                     <input
@@ -581,14 +586,14 @@ const Checkout = () => {
                       name="state"
                       value={customerDetails.state}
                       onChange={handleInputChange}
-                      className={`w-full p-4 bg-gray-800 border-2 rounded-xl text-white placeholder-gray-400 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-yellow-400 ${
-                        errors.state ? 'border-red-500 bg-red-900/20' : 'border-gray-700 hover:border-gray-600'
+                      className={`w-full p-4 bg-white border-2 rounded-xl text-gray-900 placeholder-gray-500 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+                        errors.state ? 'border-red-500 bg-red-50' : 'border-gray-300 hover:border-gray-400'
                       }`}
                       placeholder="Your state"
                       required
                     />
                     {errors.state && (
-                      <span className="text-red-400 text-sm font-medium flex items-center">
+                      <span className="text-red-600 text-sm font-medium flex items-center">
                         <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
                           <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
                         </svg>
@@ -598,7 +603,7 @@ const Checkout = () => {
                   </div>
                   
                   <div className="space-y-2">
-                    <label htmlFor="zip" className="block text-sm font-semibold text-gray-300 mb-2">
+                    <label htmlFor="zip" className="block text-sm font-semibold text-gray-700 mb-2">
                       PIN Code *
                     </label>
                     <input
@@ -607,14 +612,14 @@ const Checkout = () => {
                       name="zip"
                       value={customerDetails.zip}
                       onChange={handleInputChange}
-                      className={`w-full p-4 bg-gray-800 border-2 rounded-xl text-white placeholder-gray-400 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-yellow-400 ${
-                        errors.zip ? 'border-red-500 bg-red-900/20' : 'border-gray-700 hover:border-gray-600'
+                      className={`w-full p-4 bg-white border-2 rounded-xl text-gray-900 placeholder-gray-500 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+                        errors.zip ? 'border-red-500 bg-red-50' : 'border-gray-300 hover:border-gray-400'
                       }`}
                       placeholder="123456"
                       required
                     />
                     {errors.zip && (
-                      <span className="text-red-400 text-sm font-medium flex items-center">
+                      <span className="text-red-600 text-sm font-medium flex items-center">
                         <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
                           <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
                         </svg>
@@ -631,34 +636,35 @@ const Checkout = () => {
           <div className="lg:col-span-1">
             <div className="sticky top-8 space-y-6">
               {/* Order Summary Card */}
-              <div className="bg-gray-900 rounded-3xl p-6 border border-gray-800">
+              <div className="bg-gray-50 rounded-3xl p-6 border border-gray-200 shadow-sm">
                 <div className="flex items-center mb-6">
-                  <div className="w-10 h-10 bg-yellow-400 rounded-full flex items-center justify-center mr-3">
-                    <svg className="w-5 h-5 text-black" fill="currentColor" viewBox="0 0 20 20">
+                  <div className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center mr-3">
+                    <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
                       <path fillRule="evenodd" d="M10 2L3 7v11a1 1 0 001 1h3a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1h3a1 1 0 001-1V7l-7-5z" clipRule="evenodd" />
                     </svg>
                   </div>
-                  <h3 className="text-xl font-bold text-white">Order Summary</h3>
+                  <h3 className="text-xl font-bold text-gray-900">Order Summary</h3>
                 </div>
                 
                 {/* Products */}
                 <div className="space-y-4 mb-6">
-                  <div className="bg-gray-800 rounded-xl p-4 border border-gray-700">
+                  <div className="bg-white rounded-xl p-4 border border-gray-200">
                     <div className="flex justify-between items-start mb-3">
                       <div className="flex-1">
-                        <h4 className="text-white font-semibold text-lg">{selectedProduct.name}</h4>
-                        <p className="text-gray-400 text-sm">{selectedProduct.description}</p>
-                        <p className="text-gray-400 text-sm">Total package price</p>
+                        <h4 className="text-gray-900 font-semibold text-lg">{selectedProduct.name}</h4>
+                        <p className="text-gray-600 text-sm">{selectedProduct.description}</p>
+                        <p className="text-gray-600 text-sm">Price per item: ₹{selectedProduct.price.toLocaleString()}</p>
                       </div>
                       <div className="text-right">
-                        <p className="text-yellow-400 font-bold text-lg">₹{selectedProduct.price.toLocaleString()}</p>
+                        <p className="text-blue-600 font-bold text-lg">₹{subtotal.toLocaleString()}</p>
+                        <p className="text-gray-500 text-sm">Qty: {selectedProduct.quantity}</p>
                       </div>
                     </div>
                     
                     <div className="flex items-center justify-between">
-                      <span className="text-gray-300 text-sm">Package contains: {selectedProduct.quantity} box{selectedProduct.quantity > 1 ? 'es' : ''}</span>
-                      <div className="bg-gray-700 rounded-lg px-3 py-1">
-                        <span className="text-white font-semibold">
+                      <span className="text-gray-700 text-sm">Total for {selectedProduct.quantity} item{selectedProduct.quantity > 1 ? 's' : ''}</span>
+                      <div className="bg-gray-200 rounded-lg px-3 py-1">
+                        <span className="text-gray-900 font-semibold">
                           Package Deal
                         </span>
                       </div>
@@ -667,81 +673,72 @@ const Checkout = () => {
                 </div>
                 
                 {/* Order Totals */}
-                <div className="space-y-3 mb-6 border-t border-gray-800 pt-4">
-                  <div className="flex justify-between text-gray-300">
+                <div className="space-y-3 mb-6 border-t border-gray-200 pt-4">
+                  <div className="flex justify-between text-gray-700">
                     <span>Subtotal:</span>
                     <span>₹{subtotal.toLocaleString()}</span>
                   </div>
-                  <div className="flex justify-between text-white font-semibold text-lg">
+                  <div className="flex justify-between text-gray-900 font-semibold text-lg">
                     <span>Total:</span>
                     <span>₹{totalAmount.toLocaleString()}</span>
                   </div>
                   
-                  {paymentMethod === 'advance' && (
-                    <>
-                      <div className="bg-yellow-400/10 rounded-lg p-3 border border-yellow-400/30">
-                        <div className="flex justify-between text-yellow-400 font-bold text-xl">
-                          <span>Advance Payment:</span>
-                          <span>₹{advanceAmount.toLocaleString()}</span>
-                        </div>
-                        <p className="text-yellow-300 text-xs mt-1">Pay now to confirm order</p>
+                  {paymentMethod === 'cod' && (
+                    <div className="bg-orange-50 rounded-lg p-3 border border-orange-200">
+                      <div className="flex justify-between text-orange-700 font-bold text-xl">
+                        <span>Pay on Delivery:</span>
+                        <span>₹{totalAmount.toLocaleString()}</span>
                       </div>
-                      <div className="bg-gray-800/50 rounded-lg p-3 border border-gray-700">
-                        <div className="flex justify-between text-gray-400">
-                          <span>Balance Amount:</span>
-                          <span>₹{balanceAmount.toLocaleString()}</span>
-                        </div>
-                        <p className="text-gray-500 text-xs mt-1">Pay on delivery</p>
-                      </div>
-                    </>
+                      <p className="text-orange-600 text-xs mt-1">Full amount to be paid on delivery</p>
+                    </div>
                   )}
                   
                   {paymentMethod === 'full' && (
-                    <div className="bg-green-400/10 rounded-lg p-3 border border-green-400/30">
-                      <div className="flex justify-between text-green-400 font-bold text-xl">
-                        <span>Full Payment:</span>
+                    <div className="bg-green-50 rounded-lg p-3 border border-green-200">
+                      <div className="flex justify-between text-green-700 font-bold text-xl">
+                        <span>Pay Now:</span>
                         <span>₹{totalAmount.toLocaleString()}</span>
                       </div>
-                      <p className="text-green-300 text-xs mt-1">Complete payment now</p>
+                      <p className="text-green-600 text-xs mt-1">Complete payment now</p>
                     </div>
                   )}
                 </div>
                 
                 {/* Payment Method Options */}
                 <div className="mb-6">
-                  <h4 className="text-white font-semibold mb-3 text-lg">Payment Options</h4>
+                  <h4 className="text-gray-900 font-semibold mb-3 text-lg">Payment Options</h4>
                   <div className="space-y-3">
-                    {/* Advance Payment Option */}
-                    <div className={`bg-gray-800 rounded-xl p-4 border-2 transition-colors duration-300 ${
-                      paymentMethod === 'advance' ? 'border-yellow-400' : 'border-gray-700 hover:border-gray-600'
+                    {/* COD Option */}
+                    <div className={`bg-white rounded-xl p-4 border-2 transition-colors duration-300 ${
+                      paymentMethod === 'cod' ? 'border-orange-500' : 'border-gray-300 hover:border-gray-400'
                     }`}>
                       <label className="flex items-center cursor-pointer">
                         <input
                           type="radio"
                           name="paymentMethod"
-                          value="advance"
-                          checked={paymentMethod === 'advance'}
+                          value="cod"
+                          checked={paymentMethod === 'cod'}
                           onChange={(e) => setPaymentMethod(e.target.value)}
-                          className="w-5 h-5 text-yellow-400 border-gray-600 focus:ring-yellow-400 focus:ring-2"
+                          className="w-5 h-5 text-orange-600 border-gray-400 focus:ring-orange-500 focus:ring-2"
                         />
                         <div className="ml-3 flex items-center justify-between w-full">
                           <div className="flex items-center">
-                            <svg className="w-6 h-6 mr-2 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+                            <svg className="w-6 h-6 mr-2 text-orange-600" fill="currentColor" viewBox="0 0 20 20">
                               <path fillRule="evenodd" d="M4 4a2 2 0 00-2 2v4a2 2 0 002 2V6h10a2 2 0 00-2-2H4zm2 6a2 2 0 012-2h8a2 2 0 012 2v4a2 2 0 01-2 2H8a2 2 0 01-2-2v-4zm6 4a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
                             </svg>
                             <div>
-                              <span className="text-white font-medium">Advance Payment</span>
-                              <p className="text-gray-400 text-sm">Pay ₹{advanceAmount.toLocaleString()} now, rest on delivery</p>
+                              <span className="text-gray-900 font-medium">Cash on Delivery</span>
+                              <p className="text-gray-600 text-sm">Pay full amount when delivered</p>
                             </div>
                           </div>
-                          <div className="text-yellow-400 font-bold">₹{advanceAmount.toLocaleString()}</div>
+                          <div className="text-orange-600 font-bold">₹0 now</div>
                         </div>
                       </label>
                     </div>
 
                     {/* Full Payment Option */}
-                    <div className={`bg-gray-800 rounded-xl p-4 border-2 transition-colors duration-300 ${
-                      paymentMethod === 'full' ? 'border-green-400' : 'border-gray-700 hover:border-gray-600'
+                    <div className={`bg-white rounded-xl p-4 border-2 transition-colors duration-300 ${
+                      paymentMethod === 'full' ? 'border-green-500' : 'border-gray-300 hover:border-gray-400'
                     }`}>
                       <label className="flex items-center cursor-pointer">
                         <input
@@ -750,30 +747,32 @@ const Checkout = () => {
                           value="full"
                           checked={paymentMethod === 'full'}
                           onChange={(e) => setPaymentMethod(e.target.value)}
-                          className="w-5 h-5 text-green-400 border-gray-600 focus:ring-green-400 focus:ring-2"
+                          className="w-5 h-5 text-green-600 border-gray-400 focus:ring-green-500 focus:ring-2"
                         />
                         <div className="ml-3 flex items-center justify-between w-full">
                           <div className="flex items-center">
-                            <svg className="w-6 h-6 mr-2 text-green-400" fill="currentColor" viewBox="0 0 20 20">
+                            <svg className="w-6 h-6 mr-2 text-green-600" fill="currentColor" viewBox="0 0 20 20">
                               <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                             </svg>
                             <div>
-                              <span className="text-white font-medium">Full Payment</span>
-                              <p className="text-gray-400 text-sm">Pay complete amount now</p>
+                              <span className="text-gray-900 font-medium">Pay Online</span>
+                              <p className="text-gray-600 text-sm">Pay complete amount now</p>
                             </div>
                           </div>
-                          <div className="text-green-400 font-bold">₹{totalAmount.toLocaleString()}</div>
+                          <div className="text-green-600 font-bold">₹{totalAmount.toLocaleString()}</div>
                         </div>
                       </label>
                     </div>
                   </div>
                   
-                  <div className="mt-3 bg-gray-800/50 rounded-lg p-3 border border-gray-700">
-                    <div className="flex items-center text-gray-400 text-sm">
-                      <img src="https://upload.wikimedia.org/wikipedia/commons/8/89/Razorpay_logo.svg" alt="Razorpay" className="w-4 h-4 mr-2" />
-                      Secure payment via Cards, UPI, Net Banking
+                  {paymentMethod === 'full' && (
+                    <div className="mt-3 bg-gray-100 rounded-lg p-3 border border-gray-200">
+                      <div className="flex items-center text-gray-600 text-sm">
+                        <img src="https://upload.wikimedia.org/wikipedia/commons/8/89/Razorpay_logo.svg" alt="Razorpay" className="w-4 h-4 mr-2" />
+                        Secure payment via Cards, UPI, Net Banking
+                      </div>
                     </div>
-                  </div>
+                  )}
                 </div>
                 
                 {/* Submit Button */}
@@ -783,9 +782,9 @@ const Checkout = () => {
                   disabled={isProcessing}
                   className={`w-full ${
                     paymentMethod === 'full'
-                      ? 'bg-gradient-to-r from-green-400 to-green-500 hover:from-green-300 hover:to-green-400'
-                      : 'bg-gradient-to-r from-yellow-400 to-yellow-500 hover:from-yellow-300 hover:to-yellow-400'
-                  } text-black font-bold py-4 px-6 rounded-xl text-lg transition-all duration-300 transform ${
+                      ? 'bg-gradient-to-r from-green-600 to-green-700 hover:from-green-500 hover:to-green-600'
+                      : 'bg-gradient-to-r from-orange-600 to-orange-700 hover:from-orange-500 hover:to-orange-600'
+                  } text-white font-bold py-4 px-6 rounded-xl text-lg transition-all duration-300 transform ${
                     isProcessing 
                       ? 'opacity-70 cursor-not-allowed' 
                       : 'hover:scale-105 hover:shadow-xl'
@@ -793,8 +792,8 @@ const Checkout = () => {
                 >
                   {isProcessing ? (
                     <div className="flex items-center justify-center">
-                      <div className="w-5 h-5 border-2 border-black border-t-transparent rounded-full animate-spin mr-3"></div>
-                      Processing Payment...
+                      <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-3"></div>
+                      Processing Order...
                     </div>
                   ) : (
                     <>
@@ -803,8 +802,8 @@ const Checkout = () => {
                           <path fillRule="evenodd" d="M4 4a2 2 0 00-2 2v4a2 2 0 002 2V6h10a2 2 0 00-2-2H4zm2 6a2 2 0 012-2h8a2 2 0 012 2v4a2 2 0 01-2 2H8a2 2 0 01-2-2v-4zm6 4a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
                         </svg>
                         {paymentMethod === 'full' 
-                          ? `Pay Full Amount - ₹${totalAmount.toLocaleString()}`
-                          : `Pay Advance - ₹${advanceAmount.toLocaleString()}`
+                          ? `Pay Now - ₹${totalAmount.toLocaleString()}`
+                          : `Place COD Order`
                         }
                       </div>
                     </>
@@ -812,17 +811,17 @@ const Checkout = () => {
                 </button>
                 
                 {/* Payment Note */}
-                <div className="mt-4 bg-gray-800/50 rounded-lg p-3 border border-gray-700">
-                  <div className="flex items-center text-gray-400 text-sm">
-                    <svg className="w-4 h-4 mr-2 text-green-400" fill="currentColor" viewBox="0 0 20 20">
+                <div className="mt-4 bg-gray-100 rounded-lg p-3 border border-gray-200">
+                  <div className="flex items-center text-gray-600 text-sm">
+                    <svg className="w-4 h-4 mr-2 text-green-500" fill="currentColor" viewBox="0 0 20 20">
                       <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
                     </svg>
-                    Secure payment powered by Razorpay
+                    {paymentMethod === 'cod' ? 'Cash on Delivery' : 'Secure payment powered by Razorpay'}
                   </div>
                   <p className="text-xs text-gray-500 mt-1">
                     {paymentMethod === 'full' 
-                      ? 'Complete payment now - no balance on delivery'
-                      : `Pay ₹${advanceAmount.toLocaleString()} now, balance ₹${balanceAmount.toLocaleString()} on delivery`
+                      ? 'Complete payment now - no amount due on delivery'
+                      : `Pay ₹${totalAmount.toLocaleString()} when your order is delivered`
                     }
                   </p>
                 </div>

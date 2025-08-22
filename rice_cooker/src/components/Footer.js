@@ -1,5 +1,7 @@
 import React from "react";
 import { Facebook, Instagram, Twitter, Youtube } from "lucide-react";
+import logo from "../assets/logo.png";
+
 
 const Footer = () => {
   return (
@@ -9,7 +11,7 @@ const Footer = () => {
 
           {/* Brand */}
           <div>
-            <h2 className="text-2xl font-bold text-white mb-4">Low Carb Rice Cooker</h2>
+            <img  src={logo} alt="Logo" className="h-14" />
             <p className="text-sm text-gray-400 leading-relaxed">
               A smarter way to cook healthy rice. Enjoy delicious, fluffy rice
               with reduced starch and more nutrition.
@@ -28,7 +30,7 @@ const Footer = () => {
           </div>
 
           {/* Support */}
-          <div>
+          {/* <div>
             <h3 className="text-lg font-semibold text-white mb-4">Support</h3>
             <ul className="space-y-2 text-sm">
               <li><a href="#" className="hover:text-white">Help Center</a></li>
@@ -36,16 +38,15 @@ const Footer = () => {
               <li><a href="#" className="hover:text-white">Warranty</a></li>
               <li><a href="#" className="hover:text-white">Contact Us</a></li>
             </ul>
-          </div>
+          </div> */}
 
           {/* Socials */}
           <div>
             <h3 className="text-lg font-semibold text-white mb-4">Follow Us</h3>
             <div className="flex space-x-4">
-              <a href="#" className="hover:text-white"><Facebook size={20} /></a>
-              <a href="#" className="hover:text-white"><Instagram size={20} /></a>
-              <a href="#" className="hover:text-white"><Twitter size={20} /></a>
-              <a href="#" className="hover:text-white"><Youtube size={20} /></a>
+              <a href="https://www.facebook.com/profile.php?id=61574712373301" className="hover:text-white"><Facebook size={20} /></a>
+              <a href="https://www.instagram.com/glowglazofficial" className="hover:text-white"><Instagram size={20} /></a>
+              <a href="https://www.youtube.com/@glowglaz" className="hover:text-white"><Youtube size={20} /></a>
             </div>
           </div>
 
@@ -54,10 +55,10 @@ const Footer = () => {
         {/* Bottom bar */}
         <div className="border-t border-gray-700 mt-10 pt-6 flex flex-col md:flex-row justify-between items-center text-sm text-gray-500">
           <p>© {new Date().getFullYear()} Low Carb Rice Cooker. All rights reserved.</p>
-          <div className="mt-4 md:mt-0 space-x-4">
+          {/* <div className="mt-4 md:mt-0 space-x-4">
             <a href="#" className="hover:text-white">Privacy Policy</a>
             <a href="#" className="hover:text-white">Terms of Service</a>
-          </div>
+          </div> */}
         </div>
       </div>
     </footer>

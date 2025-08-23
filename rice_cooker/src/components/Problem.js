@@ -8,6 +8,7 @@ import three from '../assets/3.webp'
 import four from '../assets/4.webp'
 import five from '../assets/5.webp'
 import six from '../assets/6.webp'
+import video from '../assets/ad.mp4'
 
 const Problem = () => {
   const problems = [
@@ -76,55 +77,56 @@ const Problem = () => {
       </div>
 
        {/* Content and Video Section */}
-      <div className=" px-6 mb-5">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-          
-          {/* Content Side */}
-          <div>
-            <h2 className="text-4xl font-bold text-gray-800 mb-6">
-              Transform Your Cooking with Smart Rice Technology
-            </h2>
-            <p className="text-lg text-gray-600 mb-6">
-              Experience the future of healthy cooking with our innovative 3L Low Carb Sugar Rice Cooker. 
-              Designed to reduce carbs and sugar while maintaining the authentic taste and texture you love.
-            </p>
-            <ul className="space-y-3 text-gray-600">
-              <li className="flex items-center">
-                <span className="w-2 h-2 bg-green-500 rounded-full mr-3"></span>
-                Reduces carbs by up to 35%
-              </li>
-              <li className="flex items-center">
-                <span className="w-2 h-2 bg-green-500 rounded-full mr-3"></span>
-                Perfect for diabetic and health-conscious families
-              </li>
-              <li className="flex items-center">
-                <span className="w-2 h-2 bg-green-500 rounded-full mr-3"></span>
-                3L capacity serves 4-6 people
-              </li>
-              <li className="flex items-center">
-                <span className="w-2 h-2 bg-green-500 rounded-full mr-3"></span>
-                Smart timer and keep warm function
-              </li>
-            </ul>
-          </div>
+      <div className="px-6 mb-5">
+  <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-stretch">
+    
+    {/* Content Side */}
+    <div className="flex flex-col justify-center">
+      <h2 className="text-3xl lg:text-4xl font-bold text-gray-800 mb-6">
+        Transform Your Cooking with Smart Rice Technology
+      </h2>
+      <p className="text-base lg:text-lg text-gray-600 mb-6">
+        Experience the future of healthy cooking with our innovative 3L Low Carb Sugar Rice Cooker. 
+        Designed to reduce carbs and sugar while maintaining the authentic taste and texture you love.
+      </p>
+      <ul className="space-y-3 text-gray-600">
+        <li className="flex items-center">
+          <span className="w-2 h-2 bg-green-500 rounded-full mr-3"></span>
+          Reduces carbs by up to 35%
+        </li>
+        <li className="flex items-center">
+          <span className="w-2 h-2 bg-green-500 rounded-full mr-3"></span>
+          Perfect for diabetic and health-conscious families
+        </li>
+        <li className="flex items-center">
+          <span className="w-2 h-2 bg-green-500 rounded-full mr-3"></span>
+          3L capacity serves 4-6 people
+        </li>
+        <li className="flex items-center">
+          <span className="w-2 h-2 bg-green-500 rounded-full mr-3"></span>
+          Smart timer and keep warm function
+        </li>
+      </ul>
+    </div>
 
-          {/* Video Side */}
-          <div>
-            <div className="aspect-w-16 aspect-h-9 bg-gray-900 rounded-lg overflow-hidden">
-              <iframe
-                className="w-full h-full"
-                src="https://www.youtube.com/embed/dQw4w9WgXcQ"
-                title="Rice Cooker Product Usage Demo"
-                frameBorder="0"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                allowFullScreen
-                style={{ aspectRatio: '16/9', minHeight: '300px' }}
-              ></iframe>
-            </div>
-          </div>
-
-        </div>
+    {/* Video Side */}
+    <div className="flex items-center">
+      <div className="w-full max-w-sm mx-auto bg-gray-900 rounded-lg overflow-hidden">
+        <video
+          className="w-full h-auto object-cover rounded-lg"
+          src={video}
+          playsInline
+          autoPlay
+          loop
+          muted
+          style={{ maxHeight: "500px", aspectRatio: "9/16" }} // reduced height
+        />
       </div>
+    </div>
+
+  </div>
+</div>
+
     </section>
   );
 };

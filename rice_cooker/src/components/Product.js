@@ -1,30 +1,77 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { ShoppingCart, CheckCircle, Plus, Minus } from "lucide-react";
 import { Link } from "react-router-dom";
-import seven from '../assets/7.webp'
-import eight from '../assets/8.webp'
-import nine from '../assets/9.webp'
-import ten from '../assets/10.webp'
+import videoSrc from "../assets/ad2.mp4";
+import seven from "../assets/7.webp";
+import eight from "../assets/8.webp";
+import nine from "../assets/9.webp";
+import ten from "../assets/10.webp";
 
 const Product = () => {
-  // Replace with your real product images
-  const images = [
-    seven,
-    eight,
-    nine,
-    ten,
-  ];
-
-  const [selectedImage, setSelectedImage] = useState(images[0]);
+  const images = [seven, eight, nine, ten];
+  const [showVideo, setShowVideo] = useState(true);
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [selected, setSelected] = useState("video"); // track what is selected
   const [quantity, setQuantity] = useState(1);
-  const basePrice = 10000; // Base price in rupees
+  const basePrice = 10000;
   const totalPrice = basePrice * quantity;
 
+  const videoRef = useRef(null);
+
+  // Autoplay video when visible
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting && videoRef.current && selected === "video") {
+            videoRef.current.play();
+          } else if (videoRef.current) {
+            videoRef.current.pause();
+          }
+        });
+      },
+      { threshold: 0.5 }
+    );
+
+    if (videoRef.current) observer.observe(videoRef.current);
+
+    return () => {
+      if (videoRef.current) observer.unobserve(videoRef.current);
+    };
+  }, [selected]);
+
+  // Handle video end → start image slideshow
+  const handleVideoEnd = () => {
+    setShowVideo(false);
+    setCurrentImageIndex(0);
+    setSelected("image-0");
+  };
+
+  // Image slideshow after video
+  useEffect(() => {
+    if (!showVideo && selected.startsWith("image")) {
+      if (currentImageIndex < images.length - 1) {
+        const timer = setTimeout(() => {
+          setCurrentImageIndex((prev) => prev + 1);
+          setSelected(`image-${currentImageIndex + 1}`);
+        }, 1000);
+        return () => clearTimeout(timer);
+      } else {
+        setShowVideo(true);
+        setSelected("video");
+        if (videoRef.current) {
+          videoRef.current.currentTime = 0;
+          videoRef.current.play();
+        }
+      }
+    }
+  }, [showVideo, currentImageIndex, images.length, selected]);
+
   const handleQuantityChange = (action) => {
-    if (action === 'increase' && quantity < 10) {
-      setQuantity(prev => prev + 1);
-    } else if (action === 'decrease' && quantity > 1) {
-      setQuantity(prev => prev - 1);
+    if (action === "increase" && quantity < 10) {
+      setQuantity((prev) => prev + 1);
+    } else if (action === "decrease" && quantity > 1) {
+      setQuantity((prev) => prev - 1);
     }
   };
 
@@ -34,23 +81,58 @@ const Product = () => {
         
         {/* Product Gallery */}
         <div className="flex flex-col items-center">
-          {/* Main Image */}
-          <div className="w-full">
-            <img
-              src={selectedImage}
-              alt="Low Carb Sugar Rice Cooker"
-              className="rounded-xl shadow-lg w-full object-contain"
-            />
+          <div className="w-full aspect-[3/3] rounded-xl shadow-lg overflow-hidden bg-black mb-4">
+            {selected === "video" ? (
+              <video
+                ref={videoRef}
+                src={videoSrc}
+                className="w-full h-full"
+                onEnded={handleVideoEnd}
+                muted
+                playsInline
+                controls
+              />
+            ) : (
+              <img
+                src={images[currentImageIndex]}
+                alt="Product view"
+                className="w-full h-full object-contain"
+              />
+            )}
           </div>
 
-          {/* Thumbnails */}
-          <div className="flex space-x-4">
+          {/* Thumbnail Gallery (Video + Images) */}
+          <div className="flex space-x-4 overflow-x-auto">
+            {/* Video Thumbnail */}
+            <button
+              onClick={() => {
+                setShowVideo(true);
+                setSelected("video");
+              }}
+              className={`w-20 h-20 rounded-lg border-2 overflow-hidden ${
+                selected === "video" ? "border-amber-600" : "border-gray-200"
+              }`}
+            >
+              <video
+                src={videoSrc}
+                muted
+                className="w-full h-full object-cover"
+              />
+            </button>
+
+            {/* Image Thumbnails */}
             {images.map((img, index) => (
               <button
                 key={index}
-                onClick={() => setSelectedImage(img)}
-                className={`w-20 h-20 rounded-lg border-2 ${
-                  selectedImage === img ? "border-amber-600" : "border-gray-200"
+                onClick={() => {
+                  setShowVideo(false);
+                  setCurrentImageIndex(index);
+                  setSelected(`image-${index}`);
+                }}
+                className={`w-20 h-20 rounded-lg border-2 overflow-hidden ${
+                  selected === `image-${index}`
+                    ? "border-amber-600"
+                    : "border-gray-200"
                 }`}
               >
                 <img
@@ -87,15 +169,17 @@ const Product = () => {
             <p className="text-sm font-medium text-gray-700 mb-2">Quantity</p>
             <div className="flex items-center space-x-4">
               <button
-                onClick={() => handleQuantityChange('decrease')}
+                onClick={() => handleQuantityChange("decrease")}
                 className="w-8 h-8 flex items-center justify-center rounded-full border border-gray-300 hover:border-amber-600 hover:text-amber-600 transition-colors"
                 disabled={quantity <= 1}
               >
                 <Minus size={16} />
               </button>
-              <span className="text-lg font-medium w-8 text-center">{quantity}</span>
+              <span className="text-lg font-medium w-8 text-center">
+                {quantity}
+              </span>
               <button
-                onClick={() => handleQuantityChange('increase')}
+                onClick={() => handleQuantityChange("increase")}
                 className="w-8 h-8 flex items-center justify-center rounded-full border border-gray-300 hover:border-amber-600 hover:text-amber-600 transition-colors"
                 disabled={quantity >= 10}
               >
@@ -128,9 +212,11 @@ const Product = () => {
             </li>
           </ul>
 
-          {/* CTA Button */}
+          {/* CTA */}
           <Link
-            to={`/checkout?product=1&price=${basePrice}&quantity=${quantity}&name=${encodeURIComponent("3L Low Carb Sugar Rice Cooker")}`}
+            to={`/checkout?product=1&price=${basePrice}&quantity=${quantity}&name=${encodeURIComponent(
+              "3L Low Carb Sugar Rice Cooker"
+            )}`}
             className="inline-flex items-center gap-2 bg-amber-600 text-white px-6 py-3 rounded-lg shadow hover:bg-amber-700 transition-colors"
           >
             <ShoppingCart size={18} />

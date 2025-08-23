@@ -61,7 +61,7 @@ const Reviews = () => {
             <div key={i} className="px-3 pb-4">
               <div className="bg-gray-50 shadow-lg rounded-2xl overflow-hidden h-full flex flex-col">
                 {/* Image Section */}
-                <div className="w-full h-48 bg-gray-200 flex items-center justify-center overflow-hidden">
+                <div className="w-full h-96 bg-gray-200 flex items-center justify-center overflow-hidden">
                   <img
                     src={review.image}
                     alt={`${review.name}'s review`}

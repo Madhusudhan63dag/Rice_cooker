@@ -21,7 +21,7 @@ function Navbar() {
           </Link>
 
           <a href="#problem" className="flex items-center gap-2 text-gray-700 hover:text-amber-600 transition">
-            <HelpCircle size={18} /> Why Us
+            <HelpCircle size={18} /> About
           </a>
 
           <a href="#how" className="flex items-center gap-2 text-gray-700 hover:text-amber-600 transition">

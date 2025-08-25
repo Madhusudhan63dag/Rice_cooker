@@ -1,7 +1,6 @@
 import React from "react";
-import { Facebook, Instagram, Twitter, Youtube } from "lucide-react";
+import { Home, User, Cog, Star, MessageCircle, Facebook, Instagram, Twitter, Youtube } from "lucide-react";
 import logo from "../assets/logo.png";
-
 
 const Footer = () => {
   return (
@@ -11,8 +10,8 @@ const Footer = () => {
 
           {/* Brand */}
           <div>
-            <img  src={logo} alt="Logo" className="h-14" />
-            <p className="text-sm text-gray-400 leading-relaxed">
+            <img src={logo} alt="Logo" className="h-14" />
+            <p className="text-sm text-gray-400 leading-relaxed mt-2">
               A smarter way to cook healthy rice. Enjoy delicious, fluffy rice
               with reduced starch and more nutrition.
             </p>
@@ -22,23 +21,13 @@ const Footer = () => {
           <div>
             <h3 className="text-lg font-semibold text-white mb-4">Quick Links</h3>
             <ul className="space-y-2 text-sm">
-              <li><a href="#features" className="hover:text-white">Features</a></li>
-              <li><a href="#how" className="hover:text-white">How It Works</a></li>
-              <li><a href="#reviews" className="hover:text-white">Reviews</a></li>
-              <li><a href="#faq" className="hover:text-white">FAQ</a></li>
+              <li><a href="/" className="hover:text-white flex items-center gap-2"><Home size={16} /> Home</a></li>
+              <li><a href="#problem" className="hover:text-white flex items-center gap-2"><User size={16} /> About</a></li>
+              <li><a href="#how" className="hover:text-white flex items-center gap-2"><Cog size={16} /> How It Works</a></li>
+              <li><a href="#reviews" className="hover:text-white flex items-center gap-2"><Star size={16} /> Reviews</a></li>
+              <li><a href="#faq" className="hover:text-white flex items-center gap-2"><MessageCircle size={16} /> FAQ</a></li>
             </ul>
           </div>
-
-          {/* Support */}
-          {/* <div>
-            <h3 className="text-lg font-semibold text-white mb-4">Support</h3>
-            <ul className="space-y-2 text-sm">
-              <li><a href="#" className="hover:text-white">Help Center</a></li>
-              <li><a href="#" className="hover:text-white">Shipping & Returns</a></li>
-              <li><a href="#" className="hover:text-white">Warranty</a></li>
-              <li><a href="#" className="hover:text-white">Contact Us</a></li>
-            </ul>
-          </div> */}
 
           {/* Socials */}
           <div>
@@ -47,6 +36,7 @@ const Footer = () => {
               <a href="https://www.facebook.com/profile.php?id=61574712373301" className="hover:text-white"><Facebook size={20} /></a>
               <a href="https://www.instagram.com/glowglazofficial" className="hover:text-white"><Instagram size={20} /></a>
               <a href="https://www.youtube.com/@glowglaz" className="hover:text-white"><Youtube size={20} /></a>
+              <a href="https://twitter.com/" className="hover:text-white"><Twitter size={20} /></a>
             </div>
           </div>
 

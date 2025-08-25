@@ -4,11 +4,11 @@ import { Link } from "react-router-dom";
 import videoSrc from "../assets/ad2.mp4";
 import seven from "../assets/7.webp";
 import eight from "../assets/8.webp";
-import nine from "../assets/9.webp";
+// import nine from "../assets/9.webp";
 import ten from "../assets/10.webp";
 
 const Product = () => {
-  const images = [seven, eight, nine, ten];
+  const images = [seven, eight, ten];
   const [showVideo, setShowVideo] = useState(true);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [selected, setSelected] = useState("video"); // track what is selected
@@ -74,10 +74,11 @@ const Product = () => {
       setQuantity((prev) => prev - 1);
     }
   };
+  const originalPrice = 20000
 
   return (
     <section id="product" className="py-14 bg-white">
-      <div className="container mx-auto px-6 grid md:grid-cols-2 gap-12 items-center">
+      <div className=" grid md:grid-cols-2 gap-12 items-center">
         
         {/* Product Gallery */}
         <div className="flex flex-col items-center">
@@ -148,7 +149,7 @@ const Product = () => {
         {/* Product Content */}
         <div>
           <h2 className="text-3xl font-semibold text-gray-800 mb-4">
-            3L Low Carb Sugar Rice Cooker
+            Low Carb Sugar Rice Cooker
           </h2>
           <p className="text-lg text-gray-600 mb-6">
             Enjoy delicious rice without compromising your health. This smart rice cooker
@@ -157,12 +158,28 @@ const Product = () => {
           </p>
 
           {/* Price */}
+          {/* Price */}
           <div className="mb-6">
-            <p className="text-2xl font-semibold text-amber-600">
-              ₹{totalPrice.toLocaleString()}
+            <div className="flex items-baseline space-x-3">
+              <p className="text-3xl lg:text-4xl font-extrabold text-amber-600">
+                ₹{totalPrice.toLocaleString()}
+              </p>
+              {originalPrice && originalPrice > totalPrice && (
+                <p className="text-sm line-through text-gray-400 mt-1">
+                  ₹{originalPrice.toLocaleString()}
+                </p>
+              )}
+              {originalPrice && originalPrice > totalPrice && (
+                <span className="text-sm font-medium text-green-600 bg-green-100 px-2 py-0.5 rounded">
+                  {Math.round(((originalPrice - totalPrice) / originalPrice) * 100)}% OFF
+                </span>
+              )}
+            </div>
+            <p className="text-sm text-gray-500 mt-1">
+              Inclusive of all taxes
             </p>
-            <p className="text-sm text-gray-500">Inclusive of all taxes</p>
           </div>
+
 
           {/* Quantity Selector */}
           <div className="mb-6">
@@ -208,14 +225,14 @@ const Product = () => {
             </li>
             <li className="flex items-start gap-2">
               <CheckCircle className="text-amber-600 mt-1" size={18} />
-              <span>Durable stainless steel inner pot (3L capacity)</span>
+              <span>Durable stainless steel inner pot</span>
             </li>
           </ul>
 
           {/* CTA */}
           <Link
             to={`/checkout?product=1&price=${basePrice}&quantity=${quantity}&name=${encodeURIComponent(
-              "3L Low Carb Sugar Rice Cooker"
+              "Low Carb Sugar Rice Cooker"
             )}`}
             className="inline-flex items-center gap-2 bg-amber-600 text-white px-6 py-3 rounded-lg shadow hover:bg-amber-700 transition-colors"
           >

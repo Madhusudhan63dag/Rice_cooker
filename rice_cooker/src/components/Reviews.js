@@ -1,5 +1,6 @@
 import React from "react";
-import Slider from "react-slick";
+import Carousel from 'react-multi-carousel';
+import 'react-multi-carousel/lib/styles.css';
 import one from '../assets/15.webp'
 import two from '../assets/16.webp'
 import three from '../assets/17.webp'
@@ -35,19 +36,22 @@ const reviews = [
 ];
 
 const Reviews = () => {
-  const settings = {
-    infinite: true,
-    slidesToShow: 3,
-    slidesToScroll: 1,
-    autoplay: true,
-    autoplaySpeed: 0, // continuous
-    speed: 5000, // smooth speed
-    cssEase: "linear", // seamless scroll
-    pauseOnHover: true,
-    responsive: [
-      { breakpoint: 1024, settings: { slidesToShow: 2 } },
-      { breakpoint: 640, settings: { slidesToShow: 1 } },
-    ],
+  const responsive = {
+    desktop: {
+      breakpoint: { max: 3000, min: 1024 },
+      items: 3,
+      slidesToSlide: 1
+    },
+    tablet: {
+      breakpoint: { max: 1024, min: 640 },
+      items: 2,
+      slidesToSlide: 1
+    },
+    mobile: {
+      breakpoint: { max: 640, min: 0 },
+      items: 1,
+      slidesToSlide: 1
+    }
   };
 
   return (
@@ -56,18 +60,33 @@ const Reviews = () => {
         <h2 className="text-3xl font-semibold text-gray-800 text-center mb-4">
           What Our Customers Say
         </h2>
-        <Slider {...settings}>
+        
+        <Carousel
+          swipeable={true}
+          draggable={true}
+          showDots={true}
+          responsive={responsive}
+          infinite={true}
+          autoPlay={true}
+          autoPlaySpeed={3000}
+          keyBoardControl={true}
+          customTransition="all .5s"
+          transitionDuration={500}
+          containerClass="carousel-container"
+          removeArrowOnDeviceType={["mobile"]}
+          dotListClass="custom-dot-list-style"
+          itemClass="carousel-item-padding-40-px"
+        >
           {reviews.map((review, i) => (
             <div key={i} className="px-3 pb-4">
-              <div className="bg-gray-50 shadow-lg rounded-2xl overflow-hidden h-full flex flex-col">
-                {/* Image Section */}
-                <div className="w-full h-96 bg-gray-200 flex items-center justify-center overflow-hidden">
+              <div className="bg-gray-50 shadow-lg rounded-2xl overflow-hidden h-full flex flex-col mx-2">
+                {/* Image Section - Bigger on mobile */}
+                <div className="w-full h-96 max-sm:h-[500px] bg-gray-200 flex items-center justify-center overflow-hidden">
                   <img
                     src={review.image}
                     alt={`${review.name}'s review`}
                     className="w-full h-full object-contain hover:scale-105 transition-transform duration-300"
                     onError={(e) => {
-                      // Fallback if image fails to load
                       e.target.src = "https://via.placeholder.com/300x200?text=Product+Image";
                     }}
                   />
@@ -77,11 +96,11 @@ const Reviews = () => {
                 <div className="p-6 flex flex-col justify-between flex-grow">
                   <div className="mb-4">
                     {/* Star Rating */}
-                    <div className="flex items-center mb-3">
+                    <div className="flex items-center mb-3 justify-center max-sm:justify-center">
                       {[...Array(5)].map((_, index) => (
                         <svg
                           key={index}
-                          className="w-4 h-4 text-yellow-400 fill-current"
+                          className="w-5 h-5 max-sm:w-6 max-sm:h-6 text-yellow-400 fill-current"
                           viewBox="0 0 20 20"
                         >
                           <path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z" />
@@ -90,16 +109,16 @@ const Reviews = () => {
                     </div>
                     
                     {/* Review Text */}
-                    <p className="text-gray-700 text-base mb-4 italic leading-relaxed">
+                    <p className="text-gray-700 text-base max-sm:text-lg mb-4 italic leading-relaxed text-center max-sm:text-center">
                       "{review.text}"
                     </p>
                   </div>
                   
                   {/* Customer Name */}
-                  <div className="flex items-center justify-between">
-                    <h4 className="text-gray-900 font-semibold">– {review.name}</h4>
-                    <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center">
-                      <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
+                  <div className="flex items-center justify-between max-sm:justify-center">
+                    <h4 className="text-gray-900 font-semibold max-sm:text-lg">– {review.name}</h4>
+                    <div className="w-8 h-8 max-sm:w-10 max-sm:h-10 max-sm:ml-3 bg-green-500 rounded-full flex items-center justify-center">
+                      <svg className="w-4 h-4 max-sm:w-5 max-sm:h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
                         <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                       </svg>
                     </div>
@@ -108,7 +127,7 @@ const Reviews = () => {
               </div>
             </div>
           ))}
-        </Slider>
+        </Carousel>
       </div>
     </section>
   );

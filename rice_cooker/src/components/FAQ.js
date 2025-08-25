@@ -17,11 +17,6 @@ const faqs = [
       "Absolutely! You can cook both normal and low-carb rice by selecting the appropriate cooking mode.",
   },
   {
-    question: "How many cups of rice can it cook at once?",
-    answer:
-      "The cooker can prepare up to 3 liters of rice, making it suitable for small to medium families.",
-  },
-  {
     question: "Is it easy to clean?",
     answer:
       "Yes, the detachable inner pot and starch collector make cleaning very convenient.",

@@ -31,7 +31,7 @@ const steps = [
 const How = () => {
   return (
     <section id="how" className="py-20 bg-gray-50">
-      <div className="max-w-7xl mx-auto px-6">
+      <div className="px-6">
         {/* Heading */}
         <motion.h2
           className="text-3xl font-semibold text-gray-800 text-center mb-6"

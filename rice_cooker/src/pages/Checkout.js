@@ -51,7 +51,7 @@ const Checkout = () => {
       name: 'Buy 1 Get 1 Free Pack', 
       price: 750,
       quantity: 2, 
-      description: '3L Low Carb Sugar Rice Cooker - Buy 1 Get 1 Free Pack'
+      description: 'Low Carb Sugar Rice Cooker - Buy 1 Get 1 Free Pack'
     };
   };
 
@@ -265,13 +265,8 @@ const Checkout = () => {
           quantity: selectedProduct.quantity,
           totalAmount: totalAmount,
           currency: '₹',
-          paymentMethod: paymentMethod === 'cod' ? 'COD' : 'Razorpay',
-          paymentId: paymentResponse ? paymentResponse.razorpay_payment_id : 'COD',
-          // For COD orders, add balance amount
-          ...(paymentMethod === 'cod' && {
-            balanceAmount: totalAmount,
-            advanceAmount: 0
-          }),
+          paymentMethod: paymentMethod === 'cod' ? 'Cash on Delivery (COD)' : 'Razorpay',
+          paymentId: paymentResponse ? paymentResponse.razorpay_payment_id : 'COD - Pay on Delivery',
           // For multiple products structure (required by your API)
           products: [{
             name: selectedProduct.name,
@@ -290,21 +285,13 @@ const Checkout = () => {
           state: customerDetails.state,
           zip: customerDetails.zip,
           country: customerDetails.country
-        },
-        productName: selectedProduct.name
+        }
       };
 
-      // Use different endpoints based on payment method
-      let apiEndpoint;
-      if (paymentMethod === 'cod') {
-        // For COD, use the advance payment confirmation endpoint with balance amount
-        apiEndpoint = `${url}/send-advance-payment-confirmation`;
-        emailData.orderDetails.advanceAmount = 0;
-        emailData.orderDetails.balanceAmount = totalAmount;
-      } else {
-        // For full payment, use regular order confirmation
-        apiEndpoint = `${url}/send-order-confirmation`;
-      }
+      // Always use the same endpoint for both COD and online payments
+      const apiEndpoint = `${url}/send-order-confirmation`;
+
+      console.log('Sending order confirmation email...', emailData);
 
       const response = await fetch(apiEndpoint, {
         method: 'POST',
@@ -316,20 +303,10 @@ const Checkout = () => {
 
       const data = await response.json();
       
-      if (!data.success) {
+      if (data.success) {
+        console.log('Order confirmation email sent successfully');
+      } else {
         console.error('Email sending failed:', data);
-        // Try fallback to regular order confirmation
-        if (paymentMethod === 'cod') {
-          const fallbackResponse = await fetch(`${url}/send-order-confirmation`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(emailData),
-          });
-          const fallbackData = await fallbackResponse.json();
-          console.log('Fallback email result:', fallbackData);
-        }
       }
     } catch (error) {
       console.error('Email error:', error);

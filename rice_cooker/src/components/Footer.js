@@ -36,7 +36,6 @@ const Footer = () => {
               <a href="https://www.facebook.com/profile.php?id=61574712373301" className="hover:text-white"><Facebook size={20} /></a>
               <a href="https://www.instagram.com/glowglazofficial" className="hover:text-white"><Instagram size={20} /></a>
               <a href="https://www.youtube.com/@glowglaz" className="hover:text-white"><Youtube size={20} /></a>
-              <a href="https://twitter.com/" className="hover:text-white"><Twitter size={20} /></a>
             </div>
           </div>
 
